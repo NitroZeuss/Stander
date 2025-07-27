@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Simple Chat</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    input, button {
+      padding: 0.5rem;
+      margin-top: 10px;
+    }
+
+    #chatLog {
+      list-style-type: none;
+      padding: 0;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      margin-top: 20px;
+    }
+
+    #chatLog li {
+      padding: 8px;
+      margin-bottom: 4px;
+      border-radius: 4px;
+    }
+
+    .system {
+      background-color: #f0f0f0;
+      color: #333;
+      font-style: italic;
+    }
+
+    .user {
+      background-color: #d1e7dd;
+      color: #0f5132;
+    }
+  </style>
+</head>
+<body>
+  <h2>Chat Room</h2>
+
+  <input type="text" id="messageInput" placeholder="Type a message..." />
+  <button onclick="sendMessage()">Send</button>
+
+  <ul id="chatLog"></ul>
+
+  <script>
+    const roomName = "general";
+
+    const chatSocket = new WebSocket(
+      'ws://127.0.0.1:8000/ws/chat/' + roomName + '/'
+    );
+
+    chatSocket.onopen = function (e) {
+      console.log("✅ WebSocket connection opened.");
+    };
+
+    chatSocket.onmessage = function (e) {
+      console.log("📨 Received:", e.data);
+      try {
+        const data = JSON.parse(e.data);
+        const li = document.createElement('li');
+
+        if (data.type === 'connection_established') {
+          li.textContent = `[System] ${data.message}`;
+          li.classList.add('system');
+        } else if (data.type === 'chat_message') {
+          li.textContent = `[User] ${data.message}`;
+          li.classList.add('user');
+        } else {
+          li.textContent = `[?] ${JSON.stringify(data)}`;
+        }
+
+        const chatLog = document.getElementById('chatLog');
+        chatLog.appendChild(li);
+        chatLog.scrollTop = chatLog.scrollHeight; // auto-scroll
+      } catch (err) {
+        console.error("❌ JSON parse error:", err);
+      }
+    };
+
+    chatSocket.onerror = function (e) {
+      console.error("❌ WebSocket error:", e);
+    };
+
+    chatSocket.onclose = function (e) {
+      console.log("❌ WebSocket closed.");
+    };
+
+    function sendMessage() {
+      const input = document.getElementById("messageInput");
+      const message = input.value.trim();
+
+      if (message && chatSocket.readyState === WebSocket.OPEN) {
+        chatSocket.send(JSON.stringify({ message }));
+        input.value = '';
+      }
+    }
+  </script>
+</body>
+</html>
