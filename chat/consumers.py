@@ -1,7 +1,7 @@
 import json
 from channels.generic.websocket import WebsocketConsumer
 from asgiref.sync import async_to_sync
-from chat.models import Message  # Your DB model for optional storage
+from users.models import Message  # Your DB model for optional storage
 
 
 class ChatConsumer(WebsocketConsumer):
