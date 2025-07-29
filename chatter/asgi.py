@@ -11,7 +11,7 @@ import chat.routing  # Now it's safe to import this
 application = ProtocolTypeRouter({
     "websocket": AuthMiddlewareStack(
         URLRouter(
-            chat.routing.websocket_urlpatterns
+            chat.routing.webscoket_urlpatterns
         )
     ),
 })
