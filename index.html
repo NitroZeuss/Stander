@@ -1,106 +1,321 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Simple Chat</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-    }
-
-    input, button {
-      padding: 0.5rem;
-      margin-top: 10px;
-    }
-
-    #chatLog {
-      list-style-type: none;
-      padding: 0;
-      max-height: 300px;
-      overflow-y: auto;
-      border: 1px solid #ccc;
-      margin-top: 20px;
-    }
-
-    #chatLog li {
-      padding: 8px;
-      margin-bottom: 4px;
-      border-radius: 4px;
-    }
-
-    .system {
-      background-color: #f0f0f0;
-      color: #333;
-      font-style: italic;
-    }
-
-    .user {
-      background-color: #d1e7dd;
-      color: #0f5132;
-    }
-  </style>
-</head>
-<body>
-  <h2>Chat Room</h2>
-
-  <input type="text" id="messageInput" placeholder="Type a message..." />
-  <button onclick="sendMessage()">Send</button>
-
-  <ul id="chatLog"></ul>
-
-  <script>
-    const roomName = "general";
-
-    const chatSocket = new WebSocket(
-      'ws://127.0.0.1:8000/ws/chat/' + roomName + '/'
-    );
-
-    chatSocket.onopen = function (e) {
-      console.log("✅ WebSocket connection opened.");
-    };
-
-    chatSocket.onmessage = function (e) {
-      console.log("📨 Received:", e.data);
-      try {
-        const data = JSON.parse(e.data);
-        const li = document.createElement('li');
-
-        if (data.type === 'connection_established') {
-          li.textContent = `[System] ${data.message}`;
-          li.classList.add('system');
-        } else if (data.type === 'chat_message') {
-          li.textContent = `[User] ${data.message}`;
-          li.classList.add('user');
-        } else {
-          li.textContent = `[?] ${JSON.stringify(data)}`;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Llama-3.1 Chat</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        const chatLog = document.getElementById('chatLog');
-        chatLog.appendChild(li);
-        chatLog.scrollTop = chatLog.scrollHeight; // auto-scroll
-      } catch (err) {
-        console.error("❌ JSON parse error:", err);
-      }
-    };
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0a0a;
+            color: #e5e5e5;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-    chatSocket.onerror = function (e) {
-      console.error("❌ WebSocket error:", e);
-    };
+        .container {
+            width: 100%;
+            max-width: 700px;
+            background: #111111;
+            border: 1px solid #222222;
+            border-radius: 12px;
+            overflow: hidden;
+        }
 
-    chatSocket.onclose = function (e) {
-      console.log("❌ WebSocket closed.");
-    };
+        .header {
+            background: #1a1a1a;
+            padding: 24px;
+            border-bottom: 1px solid #222222;
+        }
 
-    function sendMessage() {
-      const input = document.getElementById("messageInput");
-      const message = input.value.trim();
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
 
-      if (message && chatSocket.readyState === WebSocket.OPEN) {
-        chatSocket.send(JSON.stringify({ message }));
-        input.value = '';
-      }
-    }
-  </script>
+        .header p {
+            font-size: 0.9rem;
+            color: #888888;
+            font-weight: 400;
+        }
+
+        .chat-container {
+            padding: 32px;
+        }
+
+        .input-section {
+            margin-bottom: 24px;
+        }
+
+        #userInput {
+            width: 100%;
+            min-height: 100px;
+            padding: 16px;
+            font-size: 15px;
+            font-family: inherit;
+            background: #1a1a1a;
+            border: 1px solid #333333;
+            border-radius: 8px;
+            color: #e5e5e5;
+            resize: vertical;
+            transition: all 0.2s ease;
+            outline: none;
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        #userInput:focus {
+            border-color: #555555;
+            background: #1f1f1f;
+        }
+
+        #userInput::placeholder {
+            color: #666666;
+        }
+
+        .button-wrapper {
+            display: flex;
+            gap: 12px;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 500;
+            background: #ffffff;
+            color: #000000;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        button:hover {
+            background: #f0f0f0;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .clear-btn {
+            background: #333333;
+            color: #e5e5e5;
+        }
+
+        .clear-btn:hover {
+            background: #444444;
+        }
+
+        .output-section {
+            margin-top: 32px;
+        }
+
+        .output-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #888888;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        #output {
+            background: #1a1a1a;
+            border: 1px solid #333333;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 100px;
+            white-space: pre-wrap;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #e5e5e5;
+            overflow-wrap: break-word;
+        }
+
+        #output.loading {
+            color: #888888;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #output.error {
+            color: #ff6b6b;
+            border-color: #ff6b6b;
+        }
+
+        .loading-spinner {
+            display: none;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #333333;
+            border-radius: 50%;
+            border-top-color: #000000;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 16px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .chat-container {
+                padding: 24px;
+            }
+
+            .button-wrapper {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🦙 Llama-3.1 Chat</h1>
+            <p>HuggingFace Router</p>
+        </div>
+        
+        <div class="chat-container">
+            <div class="input-section">
+                <textarea 
+                    id="userInput" 
+                    placeholder="Ask something..."
+                    rows="4"
+                ></textarea>
+                
+                <div class="button-wrapper">
+                    <button onclick="sendQuery()" id="askBtn">
+                        <div class="loading-spinner" id="spinner"></div>
+                        <span id="btnText">Ask</span>
+                    </button>
+                    <button onclick="clearChat()" class="clear-btn">
+                        Clear
+                    </button>
+                </div>
+            </div>
+
+            <div class="output-section">
+                <div class="output-label">Response</div>
+                <div id="output">Ready</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function query(data) {
+            const response = await fetch(
+                "https://router.huggingface.co/v1/chat/completions",
+                {
+                    headers: {
+                        Authorization: "Bearer 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",
+                        "Content-Type": "application/json",
+                    },
+                    method: "POST",
+                    body: JSON.stringify(data),
+                }
+            );
+            const result = await response.json();
+            return result;
+        }
+
+        async function sendQuery() {
+            const input = document.getElementById("userInput").value.trim();
+            const output = document.getElementById("output");
+            const askBtn = document.getElementById("askBtn");
+            const spinner = document.getElementById("spinner");
+            const btnText = document.getElementById("btnText");
+
+            if (!input) {
+                output.className = "error";
+                output.textContent = "Please enter a question";
+                setTimeout(() => {
+                    output.className = "";
+                }, 2000);
+                return;
+            }
+
+            // Set loading state
+            askBtn.disabled = true;
+            spinner.style.display = "inline-block";
+            btnText.textContent = "Processing...";
+            output.className = "loading";
+            output.textContent = "Thinking... 🧠";
+
+            try {
+                const response = await query({
+                    messages: [
+                        { role: "user", content: input }
+                    ],
+                    model: "meta-llama/Llama-3.1-8B-Instruct:novita"
+                });
+
+                if (response?.choices?.[0]?.message?.content) {
+                    output.className = "";
+                    output.textContent = response.choices[0].message.content;
+                } else if (response?.error) {
+                    output.className = "error";
+                    output.textContent = `❌ Error: ${response.error.message || response.error}`;
+                } else {
+                    output.className = "error";
+                    output.textContent = `⚠️ Unexpected response:\n` + JSON.stringify(response, null, 2);
+                }
+            } catch (error) {
+                output.className = "error";
+                output.textContent = `Network Error: ${error.message}`;
+            } finally {
+                // Reset button state
+                askBtn.disabled = false;
+                spinner.style.display = "none";
+                btnText.textContent = "Ask";
+            }
+        }
+
+        function clearChat() {
+            document.getElementById("userInput").value = "";
+            const output = document.getElementById("output");
+            output.className = "";
+            output.textContent = "Ready";
+        }
+
+        // Enter key to submit
+        document.getElementById("userInput").addEventListener("keydown", function(event) {
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                sendQuery();
+            }
+        });
+    </script>
 </body>
 </html>
